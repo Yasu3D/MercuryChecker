@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:MercuryMapChecker.Controls"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        Width="800" Height="600"
+        x:Class="MercuryMapChecker.MainWindow"
+        Title="MercuryChecker"
+        Icon="/Assets/icon.png"
+        DragDrop.AllowDrop="True"
+        KeyDown="OnKeyDown"
+        Background="{DynamicResource Background}">
+  <DockPanel>
+    <ScrollViewer DockPanel.Dock="Left" Width="200" Background="{DynamicResource Foreground}">
+      <StackPanel>
+        <Expander>
+          <Expander.Header>
+            Notes
+          </Expander.Header>
+          <StackPanel>
+            <ToggleButton IsChecked="True" Name="ShowNotesInvalid" Content="Invalid Notes"/>
+            <ToggleButton IsChecked="True" Name="ShowNotesOverlap" Content="Overlapping Notes"/>
+            <ToggleButton IsChecked="True" Name="ShowNotesSmall" Content="Small Notes"/>
+          </StackPanel>
+        </Expander>
+        <Separator/>
+
+        <Expander>
+          <Expander.Header>
+            Holds
+          </Expander.Header>
+          <StackPanel>
+            <ToggleButton IsChecked="True" Name="ShowHoldsInvalid" Content="Invalid Holds"/>
+            <ToggleButton IsChecked="True" Name="ShowHoldsUnbaked" Content="Unbaked Holds"/>
+            <ToggleButton IsChecked="True" Name="ShowHoldsTooFast" Content="Fast Spins"/>
+          </StackPanel>
+        </Expander>
+        <Separator/>
+
+        <Expander>
+          <Expander.Header>
+            Timing
+          </Expander.Header>
+          <StackPanel>
+            <ToggleButton IsChecked="True" Name="ShowTimingOdd" Content="Odd Beat Precision"/>
+            <ToggleButton IsChecked="True" Name="ShowTimingTooFast" Content="BPM Threshold"/>
+          </StackPanel>
+        </Expander>
+        <Separator/>
+
+        <Expander>
+          <Expander.Header>
+            Playability
+          </Expander.Header>
+          <StackPanel>
+            <ToggleButton IsChecked="True" Name="ShowPlayabilityVision" Content="Vision Issues"/>
+            <ToggleButton IsChecked="True" Name="ShowPlayabilityMovement" Content="Extreme Movement"/>
+            <ToggleButton IsChecked="True" Name="ShowPlayabilityDirectionBias" Content="Direction Bias"/>
+          </StackPanel>
+        </Expander>
+        <Separator/>
+
+        <Expander>
+          <Expander.Header>
+            Statistics
+          </Expander.Header>
+          <StackPanel>
+            <ToggleButton IsChecked="True" Name="ShowStatsCounts" Content="Note Counts"/>
+            <ToggleButton IsChecked="True" Name="ShowStatsNPS" Content="Notes Per Second"/>
+            <ToggleButton IsChecked="True" Name="ShowStatsLevel" Content="Approximate Level"/>
+            <ToggleButton IsChecked="True" Name="ShowStatsHeatmap" Content="Note Heatmap"/>
+            <ToggleButton IsChecked="True" Name="ShowStatsSkill" Content="Skill Radar"/>
+          </StackPanel>
+        </Expander>
+        <Separator/>
+      </StackPanel>
+    </ScrollViewer>
+    <ScrollViewer>
+      <StackPanel IsVisible="True">
+        <SelectableTextBlock Name="TestResults" Inlines="" FontFamily="Consolas" Margin="10,10,10,10" HorizontalAlignment="Stretch" xml:space="preserve"/>
+        <StackPanel Name="HeatmapGroup" IsVisible="False">
+          <TextBlock Text="—————— Note Heatmap ——————————" FontFamily="Consolas" Margin="10,10,10,10"/>
+          <controls:SkiaCanvas Name="HeatmapCanvas" RenderSkia="RenderHeatmap" Margin="20,0,0,0" Width="400" Height="400" HorizontalAlignment="Left"/>
+        </StackPanel>
+
+        <StackPanel Name="SkillTriangleGroup" IsVisible="False">
+          <TextBlock Text="—————— Skill Radar ———————————" FontFamily="Consolas" Margin="10,10,10,10"/>
+          <Canvas Width="400" Height="420" HorizontalAlignment="Left">
+            <controls:SkiaCanvas Name="SkillRadarCanvas" RenderSkia="RenderSkillRadar" Margin="20,0,0,0" Width="400" Height="400"/>
+            <TextBlock Text="Complexity" FontFamily="Consolas" FontWeight="Bold" Canvas.Left="70"/>
+            <TextBlock Text="Stamina" FontFamily="Consolas" FontWeight="Bold" Canvas.Left="80" Canvas.Top="400"/>
+            <TextBlock Text="Speed" FontFamily="Consolas" FontWeight="Bold" Canvas.Left="430" Canvas.Top="195"/>
+          </Canvas>
+        </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

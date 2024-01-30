@@ -1,0 +1,66 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MercuryMapChecker.App"
+             RequestedThemeVariant="Light">
+
+  <Application.Resources>
+    <Color x:Key="Foreground">#FFFFFF</Color>
+    <Color x:Key="Background">#ECECEB</Color>
+    <Color x:Key="TitleBar">#F4F4F4</Color>
+    <Color x:Key="Success">#3FC65A</Color>
+    <Color x:Key="Warning">#FFBF00</Color>
+    <Color x:Key="Error">#E62C20</Color>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style Selector="Separator">
+      <Setter Property="Background" Value="{DynamicResource Background}"/>
+      <Setter Property="Margin" Value="0,0,0,0"/>
+    </Style>
+    
+    <Style Selector="Button:runbutton">
+      <Setter Property="Background" Value="{DynamicResource Success}"/>
+
+      <Style Selector="^:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SuccessHover}"/>
+      </Style>
+
+      <Style Selector="^:pressed">
+        <Setter Property="Background" Value="{DynamicResource SuccessPress}"/>
+      </Style> 
+    </Style>
+    
+    <Style Selector="ToggleButton">
+      <Setter Property="Margin" Value="0,0,0,5"/>
+    </Style>
+    
+    <Style Selector="Expander">
+      <Setter Property="Width" Value="200"/>
+      <Setter Property="Background" Value="{DynamicResource Foreground}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Foreground}"/>
+      <Setter Property="CornerRadius" Value="0"/>
+    </Style>
+
+    <Style Selector="ToggleButton#ExpanderHeader">
+      <Setter Property="Background" Value="{DynamicResource Foreground}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Foreground}"/>
+
+      <Style Selector="^:pointerover /template/ Border#ToggleButtonBackground">
+        <Setter Property="Background" Value="{DynamicResource Foreground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Foreground}" />
+      </Style>
+
+      <Style Selector="^:pressed /template/ Border#ToggleButtonBackground">
+        <Setter Property="Background" Value="{DynamicResource Foreground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Foreground}" />
+      </Style>
+    </Style>
+
+    <Style Selector="ToggleButton#ExpanderHeader TextBlock">
+      <Setter Property="FontWeight" Value="DemiBold"/>
+    </Style>
+    
+  </Application.Styles>
+</Application>
