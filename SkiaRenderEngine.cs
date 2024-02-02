@@ -1,7 +1,7 @@
 ﻿using SkiaSharp;
 using System;
 
-namespace MercuryMapChecker;
+namespace MercuryChecker;
 
 public class SkiaRenderEngine
 {

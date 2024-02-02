@@ -2,26 +2,26 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:controls="clr-namespace:MercuryMapChecker.Controls"
+        xmlns:controls="clr-namespace:MercuryChecker.Controls"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         Width="800" Height="600"
-        x:Class="MercuryMapChecker.MainWindow"
+        x:Class="MercuryChecker.MainWindow"
         Title="MercuryChecker"
         Icon="/Assets/icon.png"
         DragDrop.AllowDrop="True"
         KeyDown="OnKeyDown"
         Background="{DynamicResource Background}">
   <DockPanel>
-    <ScrollViewer DockPanel.Dock="Left" Width="200" Background="{DynamicResource Foreground}">
+    <ScrollViewer DockPanel.Dock="Left" Width="250" Background="{DynamicResource Foreground}">
       <StackPanel>
         <Expander>
           <Expander.Header>
             Notes
           </Expander.Header>
           <StackPanel>
-            <ToggleButton IsChecked="True" Name="ShowNotesInvalid" Content="Invalid Notes"/>
-            <ToggleButton IsChecked="True" Name="ShowNotesOverlap" Content="Overlapping Notes"/>
-            <ToggleButton IsChecked="True" Name="ShowNotesSmall" Content="Small Notes"/>
+            <ToggleButton IsChecked="False" Name="ShowNotesInvalid" Content="Invalid Notes"/>
+            <ToggleButton IsChecked="False" Name="ShowNotesOverlap" Content="Overlapping Notes"/>
+            <ToggleButton IsChecked="False" Name="ShowNotesSmall" Content="Small Notes"/>
           </StackPanel>
         </Expander>
         <Separator/>
@@ -31,20 +31,8 @@
             Holds
           </Expander.Header>
           <StackPanel>
-            <ToggleButton IsChecked="True" Name="ShowHoldsInvalid" Content="Invalid Holds"/>
-            <ToggleButton IsChecked="True" Name="ShowHoldsUnbaked" Content="Unbaked Holds"/>
-            <ToggleButton IsChecked="True" Name="ShowHoldsTooFast" Content="Fast Spins"/>
-          </StackPanel>
-        </Expander>
-        <Separator/>
-
-        <Expander>
-          <Expander.Header>
-            Timing
-          </Expander.Header>
-          <StackPanel>
-            <ToggleButton IsChecked="True" Name="ShowTimingOdd" Content="Odd Beat Precision"/>
-            <ToggleButton IsChecked="True" Name="ShowTimingTooFast" Content="BPM Threshold"/>
+            <ToggleButton IsChecked="False" Name="ShowHoldsInvalid" Content="Invalid Holds"/>
+            <ToggleButton IsChecked="False" Name="ShowHoldsUnbaked" Content="Unbaked Holds"/>
           </StackPanel>
         </Expander>
         <Separator/>
@@ -54,9 +42,8 @@
             Playability
           </Expander.Header>
           <StackPanel>
-            <ToggleButton IsChecked="True" Name="ShowPlayabilityVision" Content="Vision Issues"/>
-            <ToggleButton IsChecked="True" Name="ShowPlayabilityMovement" Content="Extreme Movement"/>
-            <ToggleButton IsChecked="True" Name="ShowPlayabilityDirectionBias" Content="Direction Bias"/>
+            <ToggleButton IsChecked="False" Name="ShowPlayabilityEBpm" Content="High eBPM"/>
+            <ToggleButton IsChecked="False" Name="ShowPlayabilityVision" Content="Vision Issues [Experimental!]"/>
           </StackPanel>
         </Expander>
         <Separator/>
@@ -66,19 +53,31 @@
             Statistics
           </Expander.Header>
           <StackPanel>
-            <ToggleButton IsChecked="True" Name="ShowStatsCounts" Content="Note Counts"/>
-            <ToggleButton IsChecked="True" Name="ShowStatsNPS" Content="Notes Per Second"/>
-            <ToggleButton IsChecked="True" Name="ShowStatsLevel" Content="Approximate Level"/>
-            <ToggleButton IsChecked="True" Name="ShowStatsHeatmap" Content="Note Heatmap"/>
-            <ToggleButton IsChecked="True" Name="ShowStatsSkill" Content="Skill Radar"/>
+            <ToggleButton IsChecked="False" Name="ShowStatsCounts" Content="Note Counts"/>
+            <ToggleButton IsChecked="False" Name="ShowStatsNPS" Content="Notes Per Second"/>
+            <ToggleButton IsChecked="True" Name="ShowStatsLevel" Content="Level Estimate [Experimental!]"/>
+            <ToggleButton IsChecked="False" Name="ShowStatsHeatmap" Content="Note Heatmap"/>
+            <ToggleButton IsChecked="False" Name="ShowStatsSkill" Content="Skill Radar"/>
           </StackPanel>
         </Expander>
         <Separator/>
+        
+        <Expander>
+          <Expander.Header>
+            Debug
+          </Expander.Header>
+          <StackPanel>
+            <TextBlock Text="These options are only for debugging/testing. &#10;Don't rely on them!" Margin="0,0,0,10" TextWrapping="Wrap" FontFamily="Consolas" FontStyle="Italic"/>
+            <ToggleButton IsChecked="" Name="ShowDebugParity" Content="Parity"/>
+          </StackPanel>
+        </Expander>
+        <Separator/>
+
       </StackPanel>
     </ScrollViewer>
     <ScrollViewer>
       <StackPanel IsVisible="True">
-        <SelectableTextBlock Name="TestResults" Inlines="" FontFamily="Consolas" Margin="10,10,10,10" HorizontalAlignment="Stretch" xml:space="preserve"/>
+        <SelectableTextBlock Name="TestResults" FontFamily="Consolas" Margin="10,10,10,10" HorizontalAlignment="Stretch" xml:space="preserve"/>
         <StackPanel Name="HeatmapGroup" IsVisible="False">
           <TextBlock Text="—————— Note Heatmap ——————————" FontFamily="Consolas" Margin="10,10,10,10"/>
           <controls:SkiaCanvas Name="HeatmapCanvas" RenderSkia="RenderHeatmap" Margin="20,0,0,0" Width="400" Height="400" HorizontalAlignment="Left"/>

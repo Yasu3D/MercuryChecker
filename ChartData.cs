@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace MercuryMapChecker.ChartData;
+namespace MercuryChecker.ChartData;
 
 public class Chart
 {
@@ -22,6 +24,7 @@ public class Chart
     public List<Note> objects = [];
     public List<Note> masks = [];
     public List<Note> notes = [];
+    public List<Note> nonSegmentNotes = [];
 
     public void ParseFile(Uri uri)
     {
@@ -34,6 +37,7 @@ public class Chart
         objects.Clear();
         masks.Clear();
         notes.Clear();
+        nonSegmentNotes.Clear();
 
         string path = Uri.UnescapeDataString(uri.LocalPath);
         loaded = false;
@@ -87,7 +91,7 @@ public class Chart
                 tempNote = new Note(measure, tick, noteTypeID, position, size);
 
                 // hold start & segments
-                if ((tempNote.NoteType == ObjectEnums.NoteType.HoldStart || tempNote.NoteType == ObjectEnums.NoteType.HoldSegment) && parsed.Length >= 9)
+                if ((tempNote.NoteType == Enums.NoteType.HoldStart || tempNote.NoteType == Enums.NoteType.HoldSegment) && parsed.Length >= 9)
                 {
                     refByLine[noteIndex] = Convert.ToInt32(parsed[8]);
                 }
@@ -96,12 +100,15 @@ public class Chart
                 if (noteTypeID is 12 or 13)
                 {
                     int dir = Convert.ToInt32(parsed[8]);
-                    tempNote.MaskDirection = (ObjectEnums.MaskDirection)dir;
+                    tempNote.MaskDirection = (Enums.MaskDirection)dir;
                     masks.Add(tempNote);
                 }
                 else
                 {
                     notes.Add(tempNote);
+
+                    if (noteTypeID is not (10 or 11))
+                        nonSegmentNotes.Add(tempNote);
                 }
 
                 objects.Add(tempNote);
@@ -122,6 +129,13 @@ public class Chart
                     value2 = Convert.ToInt32(parsed[4]);
                 }
 
+                if (objectId is 3 && parsed.Length == 4)
+                {
+                    // Edge case. some old charts apparently have broken time sigs.
+                    value1 = Convert.ToInt32(parsed[3]);
+                    value2 = Convert.ToInt32(parsed[3]);
+                }
+
                 if (objectId is 2 or 5 && parsed.Length > 3)
                     value1 = Convert.ToSingle(parsed[3]);
 
@@ -130,26 +144,26 @@ public class Chart
                 // sort gimmicks by type
                 switch (tempGimmick.GimmickType)
                 {
-                    case ObjectEnums.GimmickType.BeatsPerMinute:
+                    case Enums.GimmickType.BeatsPerMinute:
                         bpmGimmicks.Add(tempGimmick);
                         break;
-                    case ObjectEnums.GimmickType.TimeSignature:
+                    case Enums.GimmickType.TimeSignature:
                         timeSigGimmicks.Add(tempGimmick);
                         break;
-                    case ObjectEnums.GimmickType.HiSpeed:
+                    case Enums.GimmickType.HiSpeed:
                         hiSpeedGimmicks.Add(tempGimmick);
                         break;
-                    case ObjectEnums.GimmickType.StopStart:
-                        tempGimmick.GimmickType = ObjectEnums.GimmickType.StopStart;
+                    case Enums.GimmickType.StopStart:
+                        tempGimmick.GimmickType = Enums.GimmickType.StopStart;
                         stopGimmicks.Add(tempGimmick);
                         break;
-                    case ObjectEnums.GimmickType.StopEnd:
-                        tempGimmick.GimmickType = ObjectEnums.GimmickType.StopEnd;
+                    case Enums.GimmickType.StopEnd:
+                        tempGimmick.GimmickType = Enums.GimmickType.StopEnd;
                         stopGimmicks.Add(tempGimmick);
                         break;
-                    case ObjectEnums.GimmickType.ReverseEffectStart:
-                    case ObjectEnums.GimmickType.ReverseEffectEnd:
-                    case ObjectEnums.GimmickType.ReverseNoteEnd:
+                    case Enums.GimmickType.ReverseEffectStart:
+                    case Enums.GimmickType.ReverseEffectEnd:
+                    case Enums.GimmickType.ReverseNoteEnd:
                         reverseGimmicks.Add(tempGimmick);
                         break;
                 }
@@ -195,12 +209,12 @@ public class Chart
             if (currentTick == lastTick)
             {
                 // if this is a bpm change, then last change must've been a time sig change.
-                if (bgmDataGimmicks[i].GimmickType is ObjectEnums.GimmickType.BeatsPerMinute)
+                if (bgmDataGimmicks[i].GimmickType is Enums.GimmickType.BeatsPerMinute)
                 {
                     bgmDataGimmicks[i - 1].BeatsPerMinute = bgmDataGimmicks[i].BeatsPerMinute;
                     lastBpm = bgmDataGimmicks[i].BeatsPerMinute;
                 }
-                if (bgmDataGimmicks[i].GimmickType is ObjectEnums.GimmickType.TimeSignature)
+                if (bgmDataGimmicks[i].GimmickType is Enums.GimmickType.TimeSignature)
                 {
                     bgmDataGimmicks[i - 1].TimeSig = bgmDataGimmicks[i].TimeSig;
                     lastTimeSig = bgmDataGimmicks[i].TimeSig;
@@ -211,13 +225,13 @@ public class Chart
                 continue;
             }
 
-            if (bgmDataGimmicks[i].GimmickType is ObjectEnums.GimmickType.BeatsPerMinute)
+            if (bgmDataGimmicks[i].GimmickType is Enums.GimmickType.BeatsPerMinute)
             {
                 bgmDataGimmicks[i].TimeSig = lastTimeSig;
                 lastBpm = bgmDataGimmicks[i].BeatsPerMinute;
             }
 
-            if (bgmDataGimmicks[i].GimmickType is ObjectEnums.GimmickType.TimeSignature)
+            if (bgmDataGimmicks[i].GimmickType is Enums.GimmickType.TimeSignature)
             {
                 bgmDataGimmicks[i].BeatsPerMinute = lastBpm;
                 lastTimeSig = bgmDataGimmicks[i].TimeSig;
@@ -245,7 +259,41 @@ public class Chart
             bgmDataGimmicks[i].Time = time;
         }
 
+        foreach (Note note in notes)
+            note.Time = GetTime(note);
+
+        foreach (Gimmick gim in hiSpeedGimmicks)
+            gim.Time = GetTime(gim);
+
+        foreach (Gimmick gim in stopGimmicks)
+            gim.Time = GetTime(gim);
+
+        foreach (Gimmick gim in reverseGimmicks)
+            gim.Time = GetTime(gim);
+
+        InterpretChart();
+
         loaded = true;
+    }
+
+    /// <summary>
+    /// A (hopefully) basic algorithm to interpret a chart's parity.
+    /// </summary>
+    public void InterpretChart()
+    {
+        foreach (Note note in notes)
+        {
+            note.CenterPoint = Utils.Modulo(note.Position + (note.Size * 0.5f), 60);
+        }
+
+        for (int i = 0; i < notes.Count; i++)
+        {
+            var current = notes[i];
+            var previous = i > 0 ? notes[i - 1] : null;
+            var next = i < notes.Count - 1 ? notes[i + 1] : null;
+
+            current.Parity = GetParityContext(current, previous, next);
+        }
     }
 
     public List<string> LoadMer(Stream stream)
@@ -255,6 +303,70 @@ public class Chart
         while (!reader.EndOfStream)
             lines.Add(reader.ReadLine() ?? "");
         return lines;
+    }
+
+    public float GetTime(ChartObject chartObject)
+    {
+        int timeStamp = chartObject.Measure * 1920 + chartObject.Tick;
+        Gimmick lastBgmData = bgmDataGimmicks.LastOrDefault(x => x.Measure * 1920 + x.Tick < timeStamp) ?? bgmDataGimmicks[0];
+
+        float lastTime = lastBgmData.Time;
+        float currentMeasure = (chartObject.Measure * 1920 + chartObject.Tick) * tickToMeasure;
+        float lastMeasure = (lastBgmData.Measure * 1920 + lastBgmData.Tick) * tickToMeasure;
+        float timeSig = lastBgmData.TimeSig.Ratio;
+        float bpm = lastBgmData.BeatsPerMinute;
+
+        float time = lastTime + ((currentMeasure - lastMeasure) * (4 * timeSig * (60000f / bpm)));
+        return time;
+    }
+
+    public static Enums.Parity GetParityContext(Note note, Note prev, Note next)
+    {
+        const float directionConstant = 1f;
+        const float prevParityConstant = 0.25f;
+        const float nextDirectionConstant = 1.5f;
+
+        // [0] - special edge cases
+        if (prev != null) 
+        {
+            if (prev.NoteType is Enums.NoteType.HoldStart or Enums.NoteType.HoldSegment && note.PrevReferencedNote != null)
+            {
+                return note.PrevReferencedNote.Parity;
+            }
+
+            // parity stays the same if note position does not change much.
+            float posDifference = float.Abs(note.CenterPoint - prev.CenterPoint);
+            if (posDifference > 30) posDifference = 60 - posDifference;
+            if (posDifference < note.Size * 0.5f) return prev.Parity;
+
+            // preserve parity on chain slides
+            if (posDifference < note.Size && prev.NoteType is Enums.NoteType.Chain && note.NoteType is Enums.NoteType.Chain) return prev.Parity;
+        }
+
+        // [1] - parity must be from note position.
+        float directionWeight = MathF.Cos(MathF.PI * note.CenterPoint * 0.0333333333f);
+
+        // [2] - parity must be opposite of previous note.
+        float prevParityWeight;
+        if (prev is null) prevParityWeight = 0;
+        else prevParityWeight = -(int)prev.Parity;
+
+        // [3] - parity must be relative to next note's position.
+        float nextDirection;
+        if (next is null) nextDirection = directionWeight;
+        else nextDirection = MathF.Cos(MathF.PI * next.CenterPoint * 0.0333333333f);
+
+        float nextDirectionWeight = (directionWeight - nextDirection) * 0.5f;
+
+        // [4] - combine weights and evaluate.
+        var parity = (directionWeight * directionConstant + prevParityWeight * prevParityConstant + nextDirectionWeight * nextDirectionConstant) switch
+        {
+            < -0.05f => Enums.Parity.Left,
+            > 0.05f => Enums.Parity.Right,
+            _ => Enums.Parity.Ambiguous
+        };
+
+        return parity;
     }
 }
 
@@ -289,9 +401,11 @@ public class Note : ChartObject
         MaskDirection = note.MaskDirection;
         NextReferencedNote = note.NextReferencedNote;
         PrevReferencedNote = note.PrevReferencedNote;
+        CenterPoint = note.CenterPoint;
+        Parity = note.Parity;
     }
 
-    public Note(int measure, int tick, int noteID, int position, int size, bool renderFlag = true, Note? nextReferencedNote = null, Note? prevReferencedNote = null, ObjectEnums.MaskDirection maskDirection = ObjectEnums.MaskDirection.None) : base(measure, tick)
+    public Note(int measure, int tick, int noteID, int position, int size, bool renderFlag = true, Note? nextReferencedNote = null, Note? prevReferencedNote = null, Enums.MaskDirection maskDirection = Enums.MaskDirection.None) : base(measure, tick)
     {
         Measure = measure;
         Tick = tick;
@@ -305,49 +419,52 @@ public class Note : ChartObject
         // assign noteType
         NoteType = noteID switch
         {
-            1 or 2 or 20 => ObjectEnums.NoteType.Touch,
-            3 or 21 => ObjectEnums.NoteType.SnapForward,
-            4 or 22 => ObjectEnums.NoteType.SnapBackward,
-            5 or 6 or 23 => ObjectEnums.NoteType.SwipeClockwise,
-            7 or 8 or 24 => ObjectEnums.NoteType.SwipeCounterclockwise,
-            9 or 25 => ObjectEnums.NoteType.HoldStart,
-            10 => ObjectEnums.NoteType.HoldSegment,
-            11 => ObjectEnums.NoteType.HoldEnd,
-            12 => ObjectEnums.NoteType.MaskAdd,
-            13 => ObjectEnums.NoteType.MaskRemove,
-            14 => ObjectEnums.NoteType.EndChart,
-            16 or 26 => ObjectEnums.NoteType.Chain,
-            _ => ObjectEnums.NoteType.None,
+            1 or 2 or 20 => Enums.NoteType.Touch,
+            3 or 21 => Enums.NoteType.SnapForward,
+            4 or 22 => Enums.NoteType.SnapBackward,
+            5 or 6 or 23 => Enums.NoteType.SwipeClockwise,
+            7 or 8 or 24 => Enums.NoteType.SwipeCounterclockwise,
+            9 or 25 => Enums.NoteType.HoldStart,
+            10 => Enums.NoteType.HoldSegment,
+            11 => Enums.NoteType.HoldEnd,
+            12 => Enums.NoteType.MaskAdd,
+            13 => Enums.NoteType.MaskRemove,
+            14 => Enums.NoteType.EndChart,
+            16 or 26 => Enums.NoteType.Chain,
+            _ => Enums.NoteType.None,
         };
 
         // assign bonusType
         BonusType = noteID switch
         {
-            1 or 3 or 4 or 5 or 7 or 9 or 10 or 11 or 12 or 13 or 14 or 16 => ObjectEnums.BonusType.None,
-            2 or 6 or 8 => ObjectEnums.BonusType.Bonus,
-            20 or 21 or 22 or 23 or 24 or 25 or 26 => ObjectEnums.BonusType.R_Note,
-            _ => ObjectEnums.BonusType.None,
+            1 or 3 or 4 or 5 or 7 or 9 or 10 or 11 or 12 or 13 or 14 or 16 => Enums.BonusType.None,
+            2 or 6 or 8 => Enums.BonusType.Bonus,
+            20 or 21 or 22 or 23 or 24 or 25 or 26 => Enums.BonusType.R_Note,
+            _ => Enums.BonusType.None,
         };
     }
 
     public int Position;
     public int Size;
-    public ObjectEnums.NoteType NoteType;
-    public ObjectEnums.BonusType BonusType;
-    public ObjectEnums.MaskDirection MaskDirection;
+    public Enums.NoteType NoteType;
+    public Enums.BonusType BonusType;
+    public Enums.MaskDirection MaskDirection;
     public bool RenderFlag;
 
-    public bool IsHold => NoteType is ObjectEnums.NoteType.HoldStart or ObjectEnums.NoteType.HoldSegment or ObjectEnums.NoteType.HoldEnd;
-    public bool IsSwipe => NoteType is ObjectEnums.NoteType.SwipeClockwise or ObjectEnums.NoteType.SwipeCounterclockwise;
-    public bool IsSnap => NoteType is ObjectEnums.NoteType.SnapForward or ObjectEnums.NoteType.SnapBackward;
+    public bool IsHold => NoteType is Enums.NoteType.HoldStart or Enums.NoteType.HoldSegment or Enums.NoteType.HoldEnd;
+    public bool IsSwipe => NoteType is Enums.NoteType.SwipeClockwise or Enums.NoteType.SwipeCounterclockwise;
+    public bool IsSnap => NoteType is Enums.NoteType.SnapForward or Enums.NoteType.SnapBackward;
 
     public Note? NextReferencedNote { get; set; }
     public Note? PrevReferencedNote { get; set; }
+
+    public float CenterPoint = 0;
+    public Enums.Parity Parity;
 }
 
 public class Gimmick : ChartObject
 {
-    public Gimmick(int measure, int tick, ObjectEnums.GimmickType gimmickType, object? value1 = null, object? value2 = null) : base(measure, tick)
+    public Gimmick(int measure, int tick, Enums.GimmickType gimmickType, object? value1 = null, object? value2 = null) : base(measure, tick)
     {
         Measure = measure;
         Tick = tick;
@@ -358,15 +475,15 @@ public class Gimmick : ChartObject
             default:
                 break;
 
-            case ObjectEnums.GimmickType.BeatsPerMinute:
+            case Enums.GimmickType.BeatsPerMinute:
                 BeatsPerMinute = Convert.ToSingle(value1);
                 break;
 
-            case ObjectEnums.GimmickType.TimeSignature:
+            case Enums.GimmickType.TimeSignature:
                 TimeSig = new TimeSignature(Convert.ToInt32(value1), Convert.ToInt32(value2));
                 break;
 
-            case ObjectEnums.GimmickType.HiSpeed:
+            case Enums.GimmickType.HiSpeed:
                 HiSpeed = Convert.ToSingle(value1);
                 break;
         }
@@ -381,42 +498,42 @@ public class Gimmick : ChartObject
         switch (gimmickID)
         {
             case 2:
-                GimmickType = ObjectEnums.GimmickType.BeatsPerMinute;
+                GimmickType = Enums.GimmickType.BeatsPerMinute;
                 BeatsPerMinute = Convert.ToSingle(value1);
                 break;
 
             case 3:
-                GimmickType = ObjectEnums.GimmickType.TimeSignature;
+                GimmickType = Enums.GimmickType.TimeSignature;
                 TimeSig = new TimeSignature(Convert.ToInt32(value1), Convert.ToInt32(value2));
                 break;
 
             case 5:
-                GimmickType = ObjectEnums.GimmickType.HiSpeed;
+                GimmickType = Enums.GimmickType.HiSpeed;
                 HiSpeed = Convert.ToSingle(value1);
                 break;
 
             case 6:
-                GimmickType = ObjectEnums.GimmickType.ReverseEffectStart;
+                GimmickType = Enums.GimmickType.ReverseEffectStart;
                 break;
 
             case 7:
-                GimmickType = ObjectEnums.GimmickType.ReverseEffectEnd;
+                GimmickType = Enums.GimmickType.ReverseEffectEnd;
                 break;
 
             case 8:
-                GimmickType = ObjectEnums.GimmickType.ReverseNoteEnd;
+                GimmickType = Enums.GimmickType.ReverseNoteEnd;
                 break;
 
             case 9:
-                GimmickType = ObjectEnums.GimmickType.StopStart;
+                GimmickType = Enums.GimmickType.StopStart;
                 break;
 
             case 10:
-                GimmickType = ObjectEnums.GimmickType.StopEnd;
+                GimmickType = Enums.GimmickType.StopEnd;
                 break;
 
             default:
-                GimmickType = ObjectEnums.GimmickType.None;
+                GimmickType = Enums.GimmickType.None;
                 break;
         }
     }
@@ -429,13 +546,13 @@ public class Gimmick : ChartObject
         TimeSig = timeSig;
     }
 
-    public ObjectEnums.GimmickType GimmickType;
+    public Enums.GimmickType GimmickType;
     public float BeatsPerMinute;
     public TimeSignature? TimeSig;
     public float HiSpeed;
 }
 
-public class ObjectEnums
+public class Enums
 {
     public enum NoteType
     {
@@ -478,5 +595,12 @@ public class ObjectEnums
         Counterclockwise = 0,
         Clockwise = 1,
         Center = 2
+    }
+
+    public enum Parity
+    {
+        Left = -1,
+        Ambiguous = 0,
+        Right = 1
     }
 }

@@ -8,7 +8,7 @@ using Avalonia.Skia;
 using Avalonia.Threading;
 using SkiaSharp;
 
-namespace MercuryMapChecker.Controls;
+namespace MercuryChecker.Controls;
 
 public class SkiaCanvas : UserControl
 {

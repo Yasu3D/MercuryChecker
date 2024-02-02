@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace MercuryMapChecker
+namespace MercuryChecker
 {
     internal class Program
     {
