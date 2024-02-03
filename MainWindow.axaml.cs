@@ -198,7 +198,7 @@ public partial class MainWindow : Window
 
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key is Key.R && e.KeyModifiers is KeyModifiers.Shift)
+        if (e.Key is Key.R)
         {
             if (filepath is null) return;
 
@@ -566,32 +566,53 @@ public partial class MainWindow : Window
 
         List<Note> checkedNotes = [];
         const float visionTimeStart = 500; // ms
-        const float visionTimeRange = 650; // ms
-        const float visionRange = 15;
+        const float visionReactionTime = 200; // ms
+        const float blockedPositionRange = 15;
+        const float hiSpeedVisionLimit = 4;
 
         for (int i = 0; i < chart.notes.Count; i++)
         {
             var current = chart.notes[i];
             if (current.CenterPoint > 30) continue;
+            if (current.CenterPoint > 15 && current.Parity == Enums.Parity.Left) continue;
+            if (current.CenterPoint < 15 && current.Parity == Enums.Parity.Right) continue;
 
-            if ((current.CenterPoint < 15 && current.Parity == Enums.Parity.Left) || (current.CenterPoint > 15 && current.Parity == Enums.Parity.Right))
+            var possibleVisionBlocks = chart.notes.Where(x => x.Time > current.Time + visionTimeStart && x.Time < current.Time + visionTimeStart + visionReactionTime);
+
+            foreach (Note note in possibleVisionBlocks)
             {
-                var possibleVisionBlocks = chart.notes.Where(x => x.Time > current.Time + visionTimeStart && x.Time < current.Time + visionTimeRange);
+                if (checkedNotes.Contains(note)) continue;
+                checkedNotes.Add(note);
 
-                foreach (Note note in possibleVisionBlocks)
-                {
-                    if (checkedNotes.Contains(note)) continue;
-                    checkedNotes.Add(note);
+                if (note.NoteType is Enums.NoteType.HoldSegment or Enums.NoteType.HoldEnd) continue;
 
-                    if (note.NoteType is Enums.NoteType.HoldSegment or Enums.NoteType.HoldEnd) continue;
-                   
-                    float loopedCenterPoint = note.CenterPoint > 30 ? note.CenterPoint - 60 : note.CenterPoint;
-                    if (current.Parity == Enums.Parity.Left && !(note.CenterPoint > current.CenterPoint && note.CenterPoint < current.CenterPoint + visionRange)) continue;
-                    if (current.Parity == Enums.Parity.Right && !(loopedCenterPoint < current.CenterPoint && loopedCenterPoint > current.CenterPoint - visionRange)) continue;
+                float loopedCenterPoint = note.CenterPoint > 30 ? note.CenterPoint - 60 : note.CenterPoint;
+                if (current.Parity == Enums.Parity.Left && !(note.CenterPoint > current.CenterPoint && note.CenterPoint < current.CenterPoint + blockedPositionRange)) continue;
+                if (current.Parity == Enums.Parity.Right && !(loopedCenterPoint < current.CenterPoint && loopedCenterPoint > current.CenterPoint - blockedPositionRange)) continue;
 
-                    AddMessage($"{note.NoteType} @ {note.Measure} {note.Tick} vision blocked by {current.NoteType} @ {current.Measure} {current.Tick}\n", MessageType.Suggestion);
-                }
+                AddMessage($"{note.NoteType} @ {note.Measure} {note.Tick} vision blocked by {current.NoteType} @ {current.Measure} {current.Tick}\n", MessageType.Suggestion);
             }
+        }
+
+        for (int i = 0; i < chart.hiSpeedGimmicks.Count; i++)
+        {
+            var gimmick = chart.hiSpeedGimmicks[i];
+            if (gimmick.HiSpeed < hiSpeedVisionLimit) continue;
+
+            float nextGimmickTime = i < chart.hiSpeedGimmicks.Count - 1 ? chart.hiSpeedGimmicks[i + 1].Time : float.PositiveInfinity;
+
+            var blockedNotes = chart.nonSegmentNotes.Where(x => x.Time > gimmick.Time + visionReactionTime && (x.Time <= nextGimmickTime || x.Time <= gimmick.Time + visionReactionTime * 2));
+            if (!blockedNotes.Any()) continue;
+
+            AddMessage($"HiSpeed Change [{gimmick.HiSpeed}] @ {gimmick.Measure} {gimmick.Tick} may cause vision or reaction time issues. Affected notes are:\n", MessageType.Warning);
+
+            foreach (var note in blockedNotes)
+            {
+                AddMessage($"   {note.NoteType} @ {note.Measure} {note.Tick}\n");
+            }
+
+            if (i != chart.hiSpeedGimmicks.Count - 1)
+                AddMessage("\n");
         }
 
         AddMessage("\n");

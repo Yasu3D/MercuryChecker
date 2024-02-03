@@ -12,8 +12,10 @@
         KeyDown="OnKeyDown"
         Background="{DynamicResource Background}">
   <DockPanel>
-    <ScrollViewer DockPanel.Dock="Left" Width="250" Background="{DynamicResource Foreground}">
+    <ScrollViewer DockPanel.Dock="Left" Width="275" Background="{DynamicResource Foreground}">
       <StackPanel>
+        <TextBlock HorizontalAlignment="Center" Margin="10, 14, 10, 10" FontFamily="Consolas" Text="Drag and Drop Files to load them!&#10;[R] to reload imported file."/>
+        <Separator/>
         <Expander>
           <Expander.Header>
             Notes
@@ -55,7 +57,7 @@
           <StackPanel>
             <ToggleButton IsChecked="False" Name="ShowStatsCounts" Content="Note Counts"/>
             <ToggleButton IsChecked="False" Name="ShowStatsNPS" Content="Notes Per Second"/>
-            <ToggleButton IsChecked="True" Name="ShowStatsLevel" Content="Level Estimate [Experimental!]"/>
+            <ToggleButton IsChecked="False" Name="ShowStatsLevel" Content="Level Estimate [Experimental!]"/>
             <ToggleButton IsChecked="False" Name="ShowStatsHeatmap" Content="Note Heatmap"/>
             <ToggleButton IsChecked="False" Name="ShowStatsSkill" Content="Skill Radar"/>
           </StackPanel>
