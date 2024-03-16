@@ -389,25 +389,49 @@ public partial class MainWindow : Window
     {
         if (chart is null) return;
 
-        var tapNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.Touch).Count();
-        var chainNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.Chain).Count();
-        var holdNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.HoldStart).Count();
-        var cwSwipeNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SwipeClockwise).Count();
-        var ccwSwipeNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SwipeCounterclockwise).Count();
-        var fwSnapNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SnapForward).Count();
-        var bwSnapNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SnapBackward).Count();
+        var tapNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.Touch);
+        var chainNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.Chain);
+        var holdNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.HoldStart);
+        var cwSwipeNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SwipeClockwise);
+        var ccwSwipeNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SwipeCounterclockwise);
+        var fwSnapNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SnapForward);
+        var bwSnapNotes = chart.notes.Where(x => x.NoteType is Enums.NoteType.SnapBackward);
+
+        var tapNotesR = tapNotes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+        var chainNotesR = chainNotes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+        var holdNotesR = holdNotes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+        var cwSwipeNotesR = cwSwipeNotes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+        var ccwSwipeNotesR = ccwSwipeNotes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+        var fwSnapNotesR = fwSnapNotes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+        var bwSnapNotesR = bwSnapNotes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+
+        List<Enums.NoteType> nonComboNotes = new List<Enums.NoteType>([Enums.NoteType.HoldSegment, Enums.NoteType.HoldEnd, Enums.NoteType.MaskAdd, Enums.NoteType.MaskRemove, Enums.NoteType.EndChart, Enums.NoteType.None]);
+
+        int totalNotes = chart.notes.Where(x => !nonComboNotes.Contains(x.NoteType)).Count();
+        int totalNotesR = chart.notes.Where(x => x.BonusType is Enums.BonusType.R_Note).Count();
+        int totalBonusNotes = chart.notes.Where(x => x.BonusType is Enums.BonusType.Bonus).Count();
+        double scorePerMarv = 1e6 / (totalNotes + totalNotesR);
+        double percentPerMarv = 100 / (double)(totalNotes + totalNotesR);
 
         statsNoteCountString =
             $"—————— Note Counts ——————————\n" +
-            $"Tap Notes  : {tapNotes}\n\n" +
-            $"Chain Notes: {chainNotes}\n\n" +
-            $"Hold Notes : {holdNotes}\n\n" +
-            $"Swipe Notes: {cwSwipeNotes + ccwSwipeNotes}\n" +
-            $"  Clockwise        : {cwSwipeNotes}\n" +
-            $"  CounterClockwise : {ccwSwipeNotes}\n\n" +
-            $"Snap Notes : {fwSnapNotes + bwSnapNotes}\n" +
-            $"  Forwards         : {fwSnapNotes}\n" +
-            $"  Backwards        : {bwSnapNotes}\n";
+            $"Combo [w/ R notes] : {totalNotes} [{totalNotes + totalNotesR}] \n" +
+            $"  Total (R Notes)  : ({totalNotesR})\n" +
+            $"  Total Bonuses    : {totalBonusNotes}\n\n" +
+            $"Tap Notes  : {tapNotes.Count()} ({tapNotesR})\n\n" +
+            $"Chain Notes: {chainNotes.Count()} ({chainNotesR})\n\n" +
+            $"Hold Notes : {holdNotes.Count()} ({holdNotesR})\n\n" +
+            $"Swipe Notes: {cwSwipeNotes.Count() + ccwSwipeNotes.Count()}\n" +
+            $"  Clockwise        : {cwSwipeNotes.Count()} ({cwSwipeNotesR})\n" +
+            $"  CounterClockwise : {ccwSwipeNotes.Count()} ({ccwSwipeNotesR})\n\n" +
+            $"Snap Notes : {fwSnapNotes.Count() + bwSnapNotes.Count()}\n" +
+            $"  Forwards         : {fwSnapNotes.Count()} ({fwSnapNotesR})\n" +
+            $"  Backwards        : {bwSnapNotes.Count()} ({bwSnapNotesR})\n\n" +
+            $"Score per Note [Percentage]\n" +
+            $"  Marvelous: {scorePerMarv:F1} [{percentPerMarv:F3}%]\n" +
+            $"  Great    : {0.7*scorePerMarv:F1} [{0.7*percentPerMarv:F3}%]\n" +
+            $"  Good     : {0.5*scorePerMarv:F1} [{0.5*percentPerMarv:F3}%]\n "
+            ;
 
         AddMessage(statsNoteCountString, MessageType.None);
         AddMessage("\n");
