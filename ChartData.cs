@@ -41,7 +41,7 @@ public class Chart
 
         string path = Uri.UnescapeDataString(uri.LocalPath);
         loaded = false;
-        if (!File.Exists(path) || Path.GetExtension(path) != ".mer") return;
+        if (!File.Exists(path) || (Path.GetExtension(path) != ".mer" && Path.GetExtension(path) != ".map")) return;
 
         FileStream fileStream = new(path, FileMode.Open, FileAccess.Read);
         List<string> merFile = LoadMer(fileStream);
